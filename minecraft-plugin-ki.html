@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐸 Plugin-Frosch</title>
+<style>
+  :root {
+    --bg: #eef7ea;
+    --leaf-dark: #2f6b3c;
+    --leaf: #4c9a5c;
+    --leaf-light: #7fc98a;
+    --pond: #cdeacb;
+    --surface: #ffffff;
+    --surface-2: #f4fbf1;
+    --border: #d3ead0;
+    --text: #1e3a24;
+    --text-secondary: #5c7a5f;
+    --accent: #ff9f43;
+    --accent-hover: #f28c1f;
+    --user-bubble: #fff3e0;
+    --code-bg: #1c2b1e;
+    --code-text: #cdeacb;
+    --danger: #d9534f;
+    --shadow: 0 4px 14px rgba(47, 107, 60, 0.12);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 8% 15%, var(--pond) 0%, transparent 35%),
+      radial-gradient(circle at 92% 85%, var(--pond) 0%, transparent 35%);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    padding: 14px 24px;
+    background: var(--leaf-dark);
+    color: #f2fbf0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    box-shadow: var(--shadow);
+    z-index: 2;
+  }
+  header .title { display: flex; align-items: center; gap: 12px; }
+  header .frog-icon {
+    width: 38px; height: 38px;
+    background: var(--leaf-light);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    box-shadow: inset 0 -3px 0 rgba(0,0,0,0.1);
+  }
+  header h1 { font-size: 16px; font-weight: 700; margin: 0; letter-spacing: 0.2px; }
+  header .sub { font-size: 12px; color: #cdeacb; margin-top: 1px; }
+  header button {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #f2fbf0;
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  header button:hover { background: rgba(255,255,255,0.22); }
+
+  #setup {
+    max-width: 560px;
+    margin: 48px auto;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 20px;
+    padding: 30px 32px;
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+  #setup::before {
+    content: "🐸";
+    position: absolute;
+    top: -26px;
+    left: 28px;
+    font-size: 40px;
+    filter: drop-shadow(0 3px 4px rgba(0,0,0,0.15));
+  }
+  #setup h2 { font-size: 19px; margin: 10px 0 4px; color: var(--leaf-dark); }
+  #setup p { font-size: 13.5px; color: var(--text-secondary); line-height: 1.7; }
+  #setup a { color: var(--leaf); font-weight: 600; text-decoration: none; }
+  #setup a:hover { text-decoration: underline; }
+  #setup input {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--surface-2);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 13.5px;
+    margin: 12px 0;
+  }
+  #setup input:focus { outline: none; border-color: var(--leaf); }
+  #setup button.primary {
+    background: var(--accent);
+    border: none;
+    color: #fff;
+    font-weight: 700;
+    padding: 12px 22px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 13.5px;
+    box-shadow: 0 3px 0 var(--accent-hover);
+  }
+  #setup button.primary:hover { transform: translateY(1px); box-shadow: 0 2px 0 var(--accent-hover); }
+  #setup .warn {
+    font-size: 12px; color: var(--danger); margin-top: 10px;
+    background: #fdeeee; padding: 8px 12px; border-radius: 10px;
+  }
+
+  #chat-area { flex: 1; overflow-y: auto; padding: 24px 20px; display: none; }
+  #chat-area.active { display: block; }
+  .msg { max-width: 780px; margin: 0 auto 20px; display: flex; gap: 12px; }
+  .msg .avatar {
+    width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px;
+    box-shadow: var(--shadow);
+  }
+  .msg.user .avatar { background: var(--accent); }
+  .msg.assistant .avatar { background: var(--leaf-light); }
+  .msg .content {
+    flex: 1; font-size: 14.5px; line-height: 1.65; padding: 12px 16px;
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+  }
+  .msg.user .content { background: var(--user-bubble); border-top-left-radius: 4px; }
+  .msg.assistant .content { background: var(--surface); border-top-left-radius: 4px; }
+  .msg .role { font-size: 12px; font-weight: 700; color: var(--leaf-dark); margin-bottom: 6px; }
+  .msg .content pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    border-radius: 12px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    margin: 10px 0;
+  }
+  .msg .content code { font-family: "SF Mono", Consolas, monospace; }
+  .msg .content p { margin: 6px 0; }
+  .msg .content :not(pre) > code {
+    background: var(--surface-2);
+    color: var(--leaf-dark);
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+
+  #input-area {
+    display: none;
+    background: var(--surface);
+    border-top: 2px solid var(--border);
+    padding: 16px 20px 20px;
+    flex-shrink: 0;
+  }
+  #input-area.active { display: block; }
+  #input-wrap {
+    max-width: 780px;
+    margin: 0 auto;
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    background: var(--surface-2);
+    border: 2px solid var(--border);
+    border-radius: 18px;
+    padding: 6px 6px 6px 16px;
+  }
+  #input-wrap:focus-within { border-color: var(--leaf); }
+  #input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    padding: 10px 0;
+    font-size: 14.5px;
+    font-family: inherit;
+    resize: none;
+    max-height: 160px;
+    line-height: 1.5;
+  }
+  #input:focus { outline: none; }
+  #send {
+    background: var(--accent);
+    border: none;
+    color: #fff;
+    font-weight: 700;
+    padding: 10px 20px;
+    border-radius: 14px;
+    cursor: pointer;
+    font-size: 13.5px;
+    height: 42px;
+    box-shadow: 0 3px 0 var(--accent-hover);
+  }
+  #send:hover:not(:disabled) { transform: translateY(1px); box-shadow: 0 2px 0 var(--accent-hover); }
+  #send:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+  #hint { max-width: 780px; margin: 10px auto 0; font-size: 11px; color: var(--text-secondary); text-align: center; }
+  .typing { display: flex; gap: 5px; padding: 2px 0; }
+  .typing span { width: 7px; height: 7px; border-radius: 50%; background: var(--leaf); animation: hop 1.1s infinite; }
+  .typing span:nth-child(2) { animation-delay: 0.15s; }
+  .typing span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes hop { 0%, 80%, 100% { transform: translateY(0); opacity: 0.4; } 40% { transform: translateY(-5px); opacity: 1; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title">
+    <div class="frog-icon">🐸</div>
+    <div>
+      <h1>Plugin-Frosch</h1>
+      <div class="sub">Hüpft direkt zu Java- & Minecraft-Plugin-Code &middot; powered by Claude</div>
+    </div>
+  </div>
+  <button id="reset-btn" onclick="resetKey()">API-Key ändern</button>
+</header>
+
+<div id="setup">
+  <h2>Los geht's! 🌿</h2>
+  <p>
+    Dieses Tool ist ein spezialisierter Chat, der die Claude-API mit deinem eigenen
+    Anthropic-API-Key nutzt. Der Frosch ist fest auf Java- und
+    Minecraft-Plugin-Entwicklung (Spigot/Paper/Bukkit) eingestellt.
+  </p>
+  <p>
+    Einen Key bekommst du kostenlos unter
+    <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>
+    (Abrechnung nach Nutzung, meist wenige Cent pro Anfrage).
+  </p>
+  <input type="password" id="api-key-input" placeholder="sk-ant-..." autocomplete="off">
+  <div>
+    <button class="primary" onclick="saveKey()">Loshüpfen 🐸</button>
+  </div>
+  <div class="warn">
+    Der Key wird nur im Arbeitsspeicher dieses Browser-Tabs gehalten, nicht gespeichert.
+    Beim Neuladen der Seite musst du ihn erneut eingeben.
+  </div>
+</div>
+
+<div id="chat-area"></div>
+
+<div id="input-area">
+  <div id="input-wrap">
+    <textarea id="input" rows="1" placeholder="Frag nach einem Plugin-Feature, Code-Review oder Bugfix..."></textarea>
+    <button id="send" onclick="sendMessage()">Senden</button>
+  </div>
+  <div id="hint">Enter zum Senden &middot; Shift+Enter für neue Zeile</div>
+</div>
+
+<script>
+let apiKey = null;
+let history = [];
+
+const SYSTEM_PROMPT = `Du bist ein hochspezialisierter Coding-Assistent für Java-Entwicklung im Minecraft-Ökosystem (Spigot, Paper, Bukkit, Folia, Forge, Fabric).
+
+Deine Prioritäten:
+1. Schreibe modernen, sauberen, performanten Java-Code (Java 17+ Konventionen, wo passend).
+2. Nutze aktuelle Best Practices für Minecraft-Plugins: Event-Listener korrekt registrieren, Async wo nötig (z.B. Datenbankzugriffe, keine Bukkit-API-Calls außerhalb des Main-Threads), NamespacedKeys statt magische Strings, ConfigurationSerializable für eigene Objekte, ordentliches Dependency-Management via plugin.yml/paper-plugin.yml.
+3. Gib immer vollständige, direkt einsetzbare Code-Blöcke, inklusive nötiger Imports.
+4. Wenn relevant, erwähne kurz die passende plugin.yml-Einträge (Commands, Permissions, Dependencies).
+5. Erkläre kurz und prägnant, was der Code tut und warum bestimmte Entscheidungen getroffen wurden - aber halte die Erklärungen knapp, der Fokus liegt auf funktionierendem Code.
+6. Wenn eine Anfrage mehrdeutig ist (z.B. welche API-Version, welcher Server-Typ), triff eine sinnvolle Standardannahme (aktuelles Paper, Java 21) und nenne sie kurz, statt nur Rückfragen zu stellen.
+7. Antworte auf Deutsch, außer der Nutzer schreibt auf Englisch.
+8. Bei Performance-kritischem Code (z.B. in Tick-Loops) weise auf mögliche Bottlenecks hin.
+
+Du hilfst niemals bei Cheats, Grief-Tools, Exploits gegen andere Server oder Lizenzverletzungen (z.B. Nachbau kostenpflichtiger Plugins 1:1).`;
+
+function saveKey() {
+  const val = document.getElementById('api-key-input').value.trim();
+  if (!val.startsWith('sk-ant-')) {
+    alert('Das sieht nicht nach einem gültigen Anthropic-API-Key aus (beginnt mit "sk-ant-").');
+    return;
+  }
+  apiKey = val;
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('chat-area').classList.add('active');
+  document.getElementById('input-area').classList.add('active');
+  addMessage('assistant', 'Ribbit! Bereit. Beschreib mir, was dein Plugin tun soll - z.B. "Erstelle einen /heal-Command mit Cooldown und Permission" oder "Warum wirft mein Listener eine NullPointerException?".');
+  document.getElementById('input').focus();
+}
+
+function resetKey() {
+  apiKey = null;
+  history = [];
+  document.getElementById('chat-area').innerHTML = '';
+  document.getElementById('chat-area').classList.remove('active');
+  document.getElementById('input-area').classList.remove('active');
+  document.getElementById('setup').style.display = 'block';
+  document.getElementById('api-key-input').value = '';
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function renderMarkdownLite(text) {
+  let escaped = escapeHtml(text);
+  escaped = escaped.replace(/```(\w*)\n([\s\S]*?)```/g, (m, lang, code) => {
+    return `<pre><code>${code}</code></pre>`;
+  });
+  escaped = escaped.replace(/`([^`]+)`/g, '<code>$1</code>');
+  escaped = escaped.split(/\n\n+/).map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+  return escaped;
+}
+
+function addMessage(role, text) {
+  const chatArea = document.getElementById('chat-area');
+  const msg = document.createElement('div');
+  msg.className = 'msg ' + role;
+  const avatarLabel = role === 'user' ? '🙂' : '🐸';
+  msg.innerHTML = `
+    <div class="avatar">${avatarLabel}</div>
+    <div class="content-wrap" style="flex:1;">
+      <div class="role">${role === 'user' ? 'Du' : 'Plugin-Frosch'}</div>
+      <div class="content">${renderMarkdownLite(text)}</div>
+    </div>
+  `;
+  chatArea.appendChild(msg);
+  chatArea.scrollTop = chatArea.scrollHeight;
+  return msg;
+}
+
+function addTypingIndicator() {
+  const chatArea = document.getElementById('chat-area');
+  const msg = document.createElement('div');
+  msg.className = 'msg assistant';
+  msg.id = 'typing-indicator';
+  msg.innerHTML = `
+    <div class="avatar">🐸</div>
+    <div class="content"><div class="typing"><span></span><span></span><span></span></div></div>
+  `;
+  chatArea.appendChild(msg);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function removeTypingIndicator() {
+  const el = document.getElementById('typing-indicator');
+  if (el) el.remove();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('input');
+  const text = input.value.trim();
+  if (!text || !apiKey) return;
+
+  addMessage('user', text);
+  history.push({ role: 'user', content: text });
+  input.value = '';
+  input.style.height = 'auto';
+
+  const sendBtn = document.getElementById('send');
+  sendBtn.disabled = true;
+  addTypingIndicator();
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4096,
+        system: SYSTEM_PROMPT,
+        messages: history
+      })
+    });
+
+    const data = await response.json();
+    removeTypingIndicator();
+
+    if (data.error) {
+      addMessage('assistant', 'Fehler von der API: ' + (data.error.message || JSON.stringify(data.error)));
+      history.pop();
+    } else {
+      const reply = data.content.map(b => b.text || '').join('\n');
+      addMessage('assistant', reply);
+      history.push({ role: 'assistant', content: reply });
+    }
+  } catch (err) {
+    removeTypingIndicator();
+    addMessage('assistant', 'Verbindungsfehler: ' + err.message + '. Falls das ein CORS-Problem ist: dieses Tool ruft die API direkt aus dem Browser auf, manche Setups blockieren das - dann müsste ein kleiner lokaler Server als Zwischenschicht her.');
+    history.pop();
+  } finally {
+    sendBtn.disabled = false;
+    input.focus();
+  }
+}
+
+document.getElementById('input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+document.getElementById('input').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 160) + 'px';
+});
+
+document.getElementById('api-key-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') saveKey();
+});
+</script>
+
+</body>
+</html>
